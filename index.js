@@ -20,6 +20,9 @@ let session;
 const msgRetryCounterCache = new NodeCache();
 const mutex = new Mutex();
 app.use(express.static(path.join(__dirname, 'pages')));
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'pages', 'dashboard.html'));
+});
 async function connector(Num, res) {
     const sessionId = `Naxor~${crypto.randomBytes(8).toString('hex')}`;
     const sessionDir = './session';
