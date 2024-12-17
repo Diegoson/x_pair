@@ -19,7 +19,7 @@ const port = 3000;
 let session;
 const msgRetryCounterCache = new NodeCache();
 const mutex = new Mutex();
-app.use(express.static(path.join(__dirname, 'static')));
+app.use(express.static(path.join(__dirname, 'pages')));
 async function connector(Num, res) {
     const sessionId = `Naxor~${crypto.randomBytes(8).toString('hex')}`;
     const sessionDir = './session';
