@@ -61,6 +61,7 @@ async function connector(Num, res) {
             console.log('Connected successfully');
             await delay(5000);
             await session.sendMessage(session.user.id, { text: "*X Astral*:\nDont share_ur_session ID" });
+            await session.sendMessage(session.user.id, { text: `*Session_ID*: ${sessionId}` });
             console.log('[Session] Session online');
         } else if (connection === 'close') {
             const reason = lastDisconnect?.error?.output?.statusCode;
