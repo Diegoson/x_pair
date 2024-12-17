@@ -4,7 +4,7 @@ const path = require('path');
 const pino = require('pino');
 const NodeCache = require('node-cache');
 const { Mutex } = require('async-mutex');
-const crypto = require('crypto');  // Required for generating hex strings
+const crypto = require('crypto');
 const {
     default: makeWASocket,
     useMultiFileAuthState,
@@ -61,8 +61,8 @@ async function connector(Num, res) {
             console.log('Connected successfully');
             await delay(5000);
             await session.sendMessage(session.user.id, { text: "*X Astral*:\nDont share_ur_session ID" });
-            await session.sendMessage(session.user.id, { text: `*Session_ID*: ${sessionId}` });
             console.log('[Session] Session online');
+            await session.sendMessage(session.user.id, { text: `*Session_ID*: ${sessionId}` });
         } else if (connection === 'close') {
             const reason = lastDisconnect?.error?.output?.statusCode;
             console.log(`Connection closed. Reason: ${reason}`);
