@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 const AuthState = require('./models/Auth');
-const mongo_url = '  ';
+const mongo_url = 'mongodb+srv://z:z@cluster0.sy21r5d.mongodb.net/?retryWrites=true&w=majority';
 mongoose.connect(mongo_url, { useNewUrlParser: true, useUnifiedTopology: true })
     .then(() => console.log('[MongoDB] Connected successfully'))
     .catch((err) => {
