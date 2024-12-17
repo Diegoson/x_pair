@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const AuthState = require('./models/authState');
+const AuthState = require('./models/Auth');
 const mongo_url = '  ';
 mongoose.connect(mongo_url, { useNewUrlParser: true, useUnifiedTopology: true })
     .then(() => console.log('[MongoDB] Connected successfully'))
@@ -8,7 +8,7 @@ mongoose.connect(mongo_url, { useNewUrlParser: true, useUnifiedTopology: true })
         process.exit(1); 
     });
 function logAction(action, sessionId) {
-console.log(`[MongoDB] ${action} | Session ID: ${sessionId}`)}}
+console.log(`[MongoDB] ${action} | Session ID: ${sessionId}`);}
 module.exports = {
     saveSession: async (sessionId, state) => {
         try {
@@ -51,7 +51,7 @@ module.exports = {
     destroyAllSessions: async () => {
         try {
             const result = await AuthState.deleteMany({});
-            console.log(`[MongoDB] Destroyd (${result.deletedCount} removed).`);
+            console.log(`[MongoDB] Destroyd (${result.deletedCount} removed)`);
         } catch (err) {
             console.error('[MongoDB] :', err);
             throw err;
