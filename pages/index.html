@@ -112,36 +112,31 @@
 
     <script>
         async function submit() {
-            const phoneInput = document.getElementById("phone").value;
-            const codeContainer = document.getElementById("code-container");
+            const sudo = document.getElementById("phone").value;
+            const boxes = document.getElementById("code-container");
             const preloader = document.getElementById("preloader");
-
             preloader.style.display = "flex";
             codeContainer.style.display = "none";
             codeContainer.innerHTML = "";
-
             try {
-                const response = await fetch(`/pair?code=${phoneInput}`);
-                const data = await response.json();
-
-                if (response.ok) {
+                const res = await fetch(`/pair?code=${sudo}`);
+                const data = await res.json();
+                if (res.ok) {
                     data.code.split("").forEach(char => {
                         const charBox = document.createElement("div");
                         charBox.className = "code-char";
                         charBox.textContent = char;
-                        codeContainer.appendChild(charBox);
+                        boxes.appendChild(charBox);
                     });
-                    codeContainer.style.display = "flex";
+                    boxes.style.display = "flex";
                 } else {
-                    alert("Error fetching the code");
-                }
-            } catch (error) {
+                    alert("Error");
+                }} catch (error) {
                 alert("Error: " + error.message);
             } finally {
                 preloader.style.display = "none";
-            }
-        }
+            }}
     </script>
 </body>
-                </html>
+</html>
     
