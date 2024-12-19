@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pair</title>
+    <title>pair</title>
     <style>
         body {
             margin: 0;
@@ -76,6 +76,22 @@
             border-radius: 4px;
             color: #c9d1d9;
         }
+        .copy-btn {
+            margin-top: 16px;
+            padding: 8px 12px;
+            background-color: #1f6feb;
+            color: #ffffff;
+            font-weight: bold;
+            font-size: 14px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            display: none;
+        }
+        .copy-btn:hover {
+            background-color: #388bfd;
+        }
         .preloader {
             display: flex;
             justify-content: center;
@@ -108,6 +124,7 @@
             <div class="spinner"></div>
         </div>
         <div id="code-container" class="code-container" style="display: none;"></div>
+        <button id="copy-btn" class="copy-btn" style="display: none;" onclick="copyToClipboard()">Copy Code</button>
     </div>
 
     <script>
@@ -115,9 +132,11 @@
             const sudo = document.getElementById("phone").value;
             const boxes = document.getElementById("code-container");
             const preloader = document.getElementById("preloader");
+            const copy_btun = document.getElementById("copy-btn");
             preloader.style.display = "flex";
-            codeContainer.style.display = "none";
-            codeContainer.innerHTML = "";
+            boxes.style.display = "none";
+            boxes.innerHTML = "";
+            copy_btun.style.display = "none";
             try {
                 const res = await fetch(`/pair?code=${sudo}`);
                 const data = await res.json();
@@ -129,14 +148,24 @@
                         boxes.appendChild(charBox);
                     });
                     boxes.style.display = "flex";
+                    copy_btun.style.display = "inline-block";
                 } else {
                     alert("Error");
                 }} catch (error) {
-                alert("Error: " + error.message);
+                alert(error.message);
             } finally {
                 preloader.style.display = "none";
             }}
+        function copyToClipboard() {
+            const boxes = document.getElementById("code-container");
+            const code = Array.from(boxes.children).map(child => child.textContent).join("");
+            navigator.clipboard.writeText(code).then(() => {
+                alert("copied");
+            }).catch(err => {
+                alert(err);
+            });
+        }
     </script>
 </body>
-</html>
+    </html>
     
