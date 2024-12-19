@@ -22,7 +22,7 @@
             box-shadow: 0 8px 16px rgba(0, 0, 0, 0.5);
             text-align: center;
             border: 1px solid #30363d;
-            width: 300px;
+            width: 320px;
         }
         h2 {
             margin-bottom: 16px;
@@ -39,65 +39,28 @@
             color: #e6edf3;
             outline: none;
         }
-        .login-btn {
-            width: 60px;
-            padding: 8px;
-            background-color: #1f6feb;
-            color: #ffffff;
-            font-weight: bold;
-            font-size: 14px;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            transition: background-color 0.3s ease;
-        }
-        .login-btn:hover {
-            background-color: #388bfd;
-        }
         .code-container {
-            margin-top: 16px;
             display: flex;
             justify-content: center;
             gap: 6px;
-            padding: 10px 0;
+            margin-top: 16px;
+            padding: 10px;
             background-color: #21262d;
             border: 1px solid #30363d;
             border-radius: 6px;
         }
         .code-char {
-            width: 28px;
-            height: 36px;
+            width: 30px;
+            height: 40px;
             display: flex;
             justify-content: center;
             align-items: center;
+            font-size: 18px;
+            font-weight: bold;
             background-color: #161b22;
             border: 1px solid #30363d;
             border-radius: 4px;
-            font-size: 18px;
-            font-weight: bold;
             color: #c9d1d9;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-        }
-        .copy-btn {
-            margin-top: 12px;
-            padding: 8px 12px;
-            font-size: 14px;
-            font-weight: 600;
-            background-color: #1f6feb;
-            color: #ffffff;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            transition: background-color 0.3s ease;
-        }
-        .copy-btn:hover {
-            background-color: #388bfd;
-        }
-        .copy-confirm {
-            margin-top: 8px;
-            font-size: 12px;
-            color: #58a6ff;
-            display: none;
         }
         .preloader {
             display: flex;
@@ -125,73 +88,44 @@
         <h2>Enter Your Number</h2>
         <div style="display: flex; justify-content: center;">
             <input type="text" id="phone" class="input-field" placeholder="Phone number">
-            <button class="login-btn" onclick="submit()">Login</button>
+            <button onclick="submit()">Login</button>
         </div>
-
         <div id="preloader" class="preloader">
             <div class="spinner"></div>
         </div>
-
-        <div id="output"></div>
         <div id="code-container" class="code-container" style="display: none;"></div>
-        <button id="copy-btn" class="copy-btn" style="display: none;" onclick="copyToClipboard()">Copy Code</button>
-        <p id="copy-confirm" class="copy-confirm">Copied!</p>
     </div>
 
     <script>
-        function cut(input) {
-            return input.replace(/\D/g, "");
-        }
-
         async function submit() {
             const phoneInput = document.getElementById("phone").value;
-            const trimmedInput = cut(phoneInput);
-            const preloader = document.getElementById("preloader");
-            const output = document.getElementById("output");
             const codeContainer = document.getElementById("code-container");
-            const copyButton = document.getElementById("copy-btn");
+            const preloader = document.getElementById("preloader");
+
             preloader.style.display = "flex";
-            output.innerHTML = "";
             codeContainer.style.display = "none";
-            codeContainer.innerHTML = ""; // Clear previous code
-            copyButton.style.display = "none";
+            codeContainer.innerHTML = "";
 
             try {
-                const response = await fetch(`/pair?code=${trimmedInput}`);
+                const response = await fetch(`/pair?code=${phoneInput}`);
                 const data = await response.json();
 
                 if (response.ok) {
-                    const code = data.code;
-                    code.split("").forEach(char => {
+                    data.code.split("").forEach(char => {
                         const charBox = document.createElement("div");
-                        charBox.classList.add("code-char");
+                        charBox.className = "code-char";
                         charBox.textContent = char;
                         codeContainer.appendChild(charBox);
                     });
                     codeContainer.style.display = "flex";
-                    copyButton.style.display = "inline-block";
-                    copyButton.onclick = () => copyToClipboard(code);
                 } else {
-                    output.innerHTML = `<p>Error: Invalid response</p>`;
+                    alert("Error fetching the code");
                 }
             } catch (error) {
-                output.innerHTML = `<p>Error: ${error.message}</p>`;
+                alert("Error: " + error.message);
             } finally {
                 preloader.style.display = "none";
             }
-        }
-
-        function copyToClipboard(text) {
-            navigator.clipboard
-                .writeText(text)
-                .then(() => {
-                    const confirmMessage = document.getElementById("copy-confirm");
-                    confirmMessage.style.display = "block";
-                    setTimeout(() => (confirmMessage.style.display = "none"), 2000);
-                })
-                .catch(err => {
-                    alert(`Failed to copy: ${err}`);
-                });
         }
     </script>
 </body>
