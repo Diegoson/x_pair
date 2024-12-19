@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pair</title>
+    <title>pair</title>
     <style>
         body {
             margin: 0;
@@ -54,24 +54,16 @@
         .login-btn:hover {
             background-color: #388bfd;
         }
-        .code-box {
-            display: flex;
-            justify-content: center;
-            gap: 6px;
+        .code-container {
             margin-top: 16px;
-        }
-        .code-char {
+            padding: 10px;
             background-color: #21262d;
             border: 1px solid #30363d;
-            border-radius: 4px;
-            width: 28px;
-            height: 36px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 18px;
-            font-weight: bold;
+            border-radius: 6px;
             color: #c9d1d9;
+            font-size: 16px;
+            font-weight: bold;
+            white-space: pre-wrap;
         }
         .copy-btn {
             margin-top: 12px;
@@ -84,7 +76,6 @@
             border-radius: 6px;
             cursor: pointer;
             transition: background-color 0.3s ease;
-            display: none;
         }
         .copy-btn:hover {
             background-color: #388bfd;
@@ -128,75 +119,61 @@
             <div class="spinner"></div>
         </div>
 
-        <div id="code-container" class="code-box" style="display: none;"></div>
-
-        <button id="copy-btn" class="copy-btn" onclick="copyToClipboard()">Copy Code</button>
-        <p id="copy-confirm" class="copy-confirm">Copied!</p>
-
         <div id="output"></div>
+        <div id="code-container" class="code-container" style="display: none;"></div>
+        <button id="copy-btn" class="copy-btn" style="display: none;" onclick="copyToClipboard()">Copy Code</button>
+        <p id="copy-confirm" class="copy-confirm">Copied!</p>
     </div>
 
     <script>
         function cut(input) {
-            return input.replace(/\D/g, ""); // Remove all non-digit characters
+            return input.replace(/\D/g, "");
         }
 
         async function submit() {
-            var inp = document.getElementById("phone").value;
-            var trim = cut(inp);
-
-            if (!trim) {
-                document.getElementById("output").innerHTML = `<p>Please enter a valid number!</p>`;
-                return;
-            }
-
-            document.getElementById("preloader").style.display = "flex";
+            const phoneInput = document.getElementById("phone").value;
+            const trimmedInput = cut(phoneInput);
+            const preloader = document.getElementById("preloader");
+            const output = document.getElementById("output");
+            const codeContainer = document.getElementById("code-container");
+            const copyButton = document.getElementById("copy-btn");
+            preloader.style.display = "flex";
+            output.innerHTML = "";
+            codeContainer.style.display = "none";
+            copyButton.style.display = "none";
 
             try {
-                var res = await fetch(`/pair?code=${trim}`);
-                console.log(await res.text()); // Debug raw response
-                var data = await res.json();
+                const response = await fetch(`/pair?code=${trimmedInput}`);
+                const data = await response.json();
 
-                document.getElementById("preloader").style.display = "none";
-
-                if (res.ok && data.code) {
-                    displayCode(data.code); // Use box SC here
-                    document.getElementById("copy-btn").onclick = function() {
-                        copyToClipboard(data.code);
-                    };
+                if (response.ok) {
+                    codeContainer.textContent = data.code;
+                    codeContainer.style.display = "block";
+                    copyButton.style.display = "inline-block";
+                    copyButton.onclick = () => copyToClipboard(data.code);
                 } else {
-                    document.getElementById("output").innerHTML = `<p>Error: Something went wrong</p>`;
+                    output.innerHTML = `<p>Error: Invalid response</p>`;
                 }
             } catch (error) {
-                document.getElementById("preloader").style.display = "none";
-                document.getElementById("output").innerHTML = `<p>Error: ${error.message}</p>`;
+                output.innerHTML = `<p>Error: ${error.message}</p>`;
+            } finally {
+                preloader.style.display = "none";
             }
-        }
-
-        function displayCode(code) {
-            const container = document.getElementById("code-container");
-            container.innerHTML = ""; // Clear previous code blocks
-
-            code.split("").forEach(char => {
-                const box = document.createElement("div");
-                box.className = "code-char";
-                box.innerText = char;
-                container.appendChild(box);
-            });
-
-            document.getElementById("code-container").style.display = "flex";
-            document.getElementById("copy-btn").style.display = "inline-block";
         }
 
         function copyToClipboard(text) {
-            navigator.clipboard.writeText(text)
+            navigator.clipboard
+                .writeText(text)
                 .then(() => {
-                    document.getElementById("copy-confirm").style.display = "block";
+                    const confirmMessage = document.getElementById("copy-confirm");
+                    confirmMessage.style.display = "block";
+                    setTimeout(() => (confirmMessage.style.display = "none"), 2000);
                 })
                 .catch(err => {
-                    alert("Copy failed: " + err);
+                    alert(`Failed to copy: ${err}`);
                 });
         }
     </script>
 </body>
-</html>
+    </html>
+    
