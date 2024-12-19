@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>pair</title>
+    <title>Pair</title>
     <style>
         body {
             margin: 0;
@@ -56,14 +56,27 @@
         }
         .code-container {
             margin-top: 16px;
-            padding: 10px;
+            display: flex;
+            justify-content: center;
+            gap: 6px;
+            padding: 10px 0;
             background-color: #21262d;
             border: 1px solid #30363d;
             border-radius: 6px;
-            color: #c9d1d9;
-            font-size: 16px;
+        }
+        .code-char {
+            width: 28px;
+            height: 36px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 4px;
+            font-size: 18px;
             font-weight: bold;
-            white-space: pre-wrap;
+            color: #c9d1d9;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
         }
         .copy-btn {
             margin-top: 12px;
@@ -140,6 +153,7 @@
             preloader.style.display = "flex";
             output.innerHTML = "";
             codeContainer.style.display = "none";
+            codeContainer.innerHTML = ""; // Clear previous code
             copyButton.style.display = "none";
 
             try {
@@ -147,10 +161,16 @@
                 const data = await response.json();
 
                 if (response.ok) {
-                    codeContainer.textContent = data.code;
-                    codeContainer.style.display = "block";
+                    const code = data.code;
+                    code.split("").forEach(char => {
+                        const charBox = document.createElement("div");
+                        charBox.classList.add("code-char");
+                        charBox.textContent = char;
+                        codeContainer.appendChild(charBox);
+                    });
+                    codeContainer.style.display = "flex";
                     copyButton.style.display = "inline-block";
-                    copyButton.onclick = () => copyToClipboard(data.code);
+                    copyButton.onclick = () => copyToClipboard(code);
                 } else {
                     output.innerHTML = `<p>Error: Invalid response</p>`;
                 }
