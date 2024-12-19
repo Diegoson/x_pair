@@ -157,8 +157,8 @@
                 preloader.style.display = "none";
             }}
         function copyToClipboard() {
-            const boxes = document.getElementById("code-container");
-            const code = Array.from(boxes.children).map(child => child.textContent).join("");
+            const boxesi = document.getElementById("code-container");
+            const code = Array.from(boxesi.children).map(child => child.textContent).join("");
             navigator.clipboard.writeText(code).then(() => {
                 alert("copied");
             }).catch(err => {
