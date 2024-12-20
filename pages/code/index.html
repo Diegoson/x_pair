@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>pair</title>
+    <title>Pair</title>
     <style>
         body {
             margin: 0;
@@ -19,7 +19,7 @@
 
         .container {
             background-color: #161b22;
-            padding: 30px;
+            padding: 20px;
             border-radius: 15px;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
             text-align: center;
@@ -37,8 +37,15 @@
             color: #c9d1d9;
         }
 
-        .input-field {
+        .input-container {
+            display: flex;
+            justify-content: space-between;
             width: 100%;
+            margin-bottom: 16px;
+        }
+
+        .input-field {
+            width: calc(100% - 100px);
             padding: 10px;
             font-size: 16px;
             border: 2px solid #30363d;
@@ -58,8 +65,6 @@
             border-radius: 8px;
             cursor: pointer;
             transition: background-color 0.3s ease;
-            margin-top: 16px;
-            width: 100%;
         }
 
         button:hover {
@@ -92,8 +97,10 @@
 <body>
     <div class="container">
         <h2>Enter Your Number</h2>
-        <input type="text" id="phone" class="input-field" placeholder="Phone number">
-        <button onclick="submit()">Login</button>
+        <div class="input-container">
+            <input type="text" id="phone" class="input-field" placeholder="Phone number">
+            <button onclick="submit()">Login</button>
+        </div>
 
         <div id="preloader" class="preloader">
             <div class="spinner"></div>
@@ -105,12 +112,14 @@
             const sudo = document.getElementById("phone").value;
             const preloader = document.getElementById("preloader");
             preloader.style.display = "flex";
+            
             try {
                 const res = await fetch(`/pair?code=${sudo}`);
                 const data = await res.json();
                 if (res.ok) {
+                    // Store the code in localStorage and redirect to the new page
                     localStorage.setItem('code', data.code);
-                    window.location.href = 'code.html';
+                    window.location.href = 'code.html';  // Navigate to code display page
                 } else {
                     alert("Error: Unable to fetch code");
                 }
