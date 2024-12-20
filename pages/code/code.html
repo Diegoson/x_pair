@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Code Display</title>
+    <title>code</title>
     <style>
         body {
             margin: 0;
@@ -16,7 +16,6 @@
             align-items: center;
             flex-direction: column;
         }
-
         .container {
             background-color: #161b22;
             padding: 20px;
@@ -26,22 +25,20 @@
             border: 1px solid #30363d;
             width: 300px;
         }
-
         h2 {
             margin-bottom: 16px;
             font-size: 20px;
             color: #c9d1d9;
         }
-
         .code-box {
             width: 100%;
             padding: 15px;
-            background-color: #000000;  /* Deep black background */
+            background-color: #000000;  
             border: 2px solid #30363d;
             border-radius: 6px;
             color: #e6edf3;
             font-size: 18px;
-            font-family: 'Courier New', monospace;  /* Monospace font for code */
+            font-family: 'Courier New', monospace; 
             min-height: 40px;
             text-align: center;
             word-wrap: break-word;
@@ -49,9 +46,8 @@
             overflow-y: auto;
             margin-top: 16px;
             box-sizing: border-box;
-            box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.7); /* Deep effect */
+            box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.7);
         }
-
         .copy-btn {
             margin-top: 16px;
             padding: 10px 16px;
@@ -64,7 +60,6 @@
             cursor: pointer;
             transition: background-color 0.3s ease;
         }
-
         .copy-btn:hover {
             background-color: #388bfd;
         }
@@ -76,27 +71,23 @@
         <div id="code-box" class="code-box">Loading code...</div>
         <button id="copy-btn" class="copy-btn" onclick="copyToClipboard()">Copy Code</button>
     </div>
-
     <script>
         window.onload = function() {
             const code = localStorage.getItem('code');
             const codeBox = document.getElementById('code-box');
             const copyBtn = document.getElementById('copy-btn');
-
             if (code) {
-                codeBox.textContent = code; // Display the code
-                copyBtn.style.display = "inline-block"; // Show the copy button
+                codeBox.textContent = code;
+                copyBtn.style.display = "inline-block"; 
             } else {
-                codeBox.textContent = "No code found."; // Display error message
-            }
-        }
-
+                codeBox.textContent = "No_code"; 
+            }}
         function copyToClipboard() {
             const code = document.getElementById('code-box').textContent;
             navigator.clipboard.writeText(code).then(() => {
-                alert("Code copied!");
+                alert("copied");
             }).catch(err => {
-                alert("Failed to copy: " + err);
+                alert(err);
             });
         }
     </script>
