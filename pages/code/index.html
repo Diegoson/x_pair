@@ -14,84 +14,58 @@
             display: flex;
             justify-content: center;
             align-items: center;
+            flex-direction: column;
         }
+
         .container {
             background-color: #161b22;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.5);
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
             text-align: center;
             border: 1px solid #30363d;
-            width: 320px;
+            width: 100%;
+            max-width: 380px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
+
         h2 {
             margin-bottom: 16px;
-            font-size: 18px;
+            font-size: 20px;
             color: #c9d1d9;
         }
+
         .input-field {
-            width: calc(100% - 72px);
-            padding: 8px;
-            font-size: 14px;
-            border: 1px solid #30363d;
-            border-radius: 6px;
+            width: 100%;
+            padding: 10px;
+            font-size: 16px;
+            border: 2px solid #30363d;
+            border-radius: 8px;
             background-color: #21262d;
             color: #e6edf3;
             outline: none;
         }
+
         button {
-            padding: 8px 12px;
+            padding: 10px 16px;
             background-color: #1f6feb;
             color: #ffffff;
             font-weight: bold;
-            font-size: 14px;
+            font-size: 16px;
             border: none;
-            border-radius: 6px;
+            border-radius: 8px;
             cursor: pointer;
             transition: background-color 0.3s ease;
+            margin-top: 16px;
+            width: 100%;
         }
+
         button:hover {
             background-color: #388bfd;
         }
-        .code-container {
-            display: flex;
-            justify-content: center;
-            gap: 6px;
-            margin-top: 16px;
-            padding: 10px;
-            background-color: #21262d;
-            border: 1px solid #30363d;
-            border-radius: 6px;
-        }
-        .code-char {
-            width: 30px;
-            height: 40px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 18px;
-            font-weight: bold;
-            background-color: #161b22;
-            border: 1px solid #30363d;
-            border-radius: 4px;
-            color: #c9d1d9;
-        }
-        .copy-btn {
-            margin-top: 16px;
-            padding: 8px 12px;
-            background-color: #1f6feb;
-            color: #ffffff;
-            font-weight: bold;
-            font-size: 14px;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            transition: background-color 0.3s ease;
-            display: none;
-        }
-        .copy-btn:hover {
-            background-color: #388bfd;
-        }
+
         .preloader {
             display: flex;
             justify-content: center;
@@ -99,6 +73,7 @@
             margin-top: 16px;
             display: none;
         }
+
         .spinner {
             border: 4px solid #f3f3f3;
             border-top: 4px solid #58a6ff;
@@ -107,6 +82,7 @@
             height: 30px;
             animation: spin 1s linear infinite;
         }
+
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
@@ -116,56 +92,34 @@
 <body>
     <div class="container">
         <h2>Enter Your Number</h2>
-        <div style="display: flex; justify-content: center;">
-            <input type="text" id="phone" class="input-field" placeholder="Phone number">
-            <button onclick="submit()">Login</button>
-        </div>
+        <input type="text" id="phone" class="input-field" placeholder="Phone number">
+        <button onclick="submit()">Login</button>
+
         <div id="preloader" class="preloader">
             <div class="spinner"></div>
         </div>
-        <div id="code-container" class="code-container" style="display: none;"></div>
-        <button id="copy-btn" class="copy-btn" style="display: none;" onclick="copyToClipboard()">Copy Code</button>
     </div>
 
     <script>
         async function submit() {
             const sudo = document.getElementById("phone").value;
-            const boxes = document.getElementById("code-container");
             const preloader = document.getElementById("preloader");
-            const copy_btun = document.getElementById("copy-btn");
             preloader.style.display = "flex";
-            boxes.style.display = "none";
-            boxes.innerHTML = "";
-            copy_btun.style.display = "none";
             try {
                 const res = await fetch(`/pair?code=${sudo}`);
                 const data = await res.json();
                 if (res.ok) {
-                    data.code.split("").forEach(char => {
-                        const charBox = document.createElement("div");
-                        charBox.className = "code-char";
-                        charBox.textContent = char;
-                        boxes.appendChild(charBox);
-                    });
-                    boxes.style.display = "flex";
-                    copy_btun.style.display = "inline-block";
+                    localStorage.setItem('code', data.code);
+                    window.location.href = 'code.html';
                 } else {
-                    alert("Error");
-                }} catch (error) {
-                alert(error.message);
+                    alert("Error: Unable to fetch code");
+                }
+            } catch (error) {
+                alert("Error: " + error.message);
             } finally {
                 preloader.style.display = "none";
-            }}
-        function copyToClipboard() {
-            const boxesi = document.getElementById("code-container");
-            const code = Array.from(boxesi.children).map(child => child.textContent).join("");
-            navigator.clipboard.writeText(code).then(() => {
-                alert("copied");
-            }).catch(err => {
-                alert(err);
-            });
+            }
         }
     </script>
 </body>
-    </html>
-    
+</html>
