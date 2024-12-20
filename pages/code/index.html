@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pair</title>
+    <title>pair</title>
     <style>
         body {
             margin: 0;
@@ -16,7 +16,6 @@
             align-items: center;
             flex-direction: column;
         }
-
         .container {
             background-color: #161b22;
             padding: 20px;
@@ -24,15 +23,13 @@
             box-shadow: 0 8px 16px rgba(0, 0, 0, 0.5);
             text-align: center;
             border: 1px solid #30363d;
-            width: 300px;
+            width: 320px;
         }
-
         h2 {
             margin-bottom: 16px;
             font-size: 20px;
             color: #c9d1d9;
         }
-
         .input-container {
             display: flex;
             justify-content: space-between;
@@ -40,9 +37,8 @@
             width: 100%;
             margin-bottom: 16px;
         }
-
         .input-field {
-            width: 80%;
+            width: calc(100% - 70px);
             padding: 10px;
             font-size: 16px;
             border: 2px solid #30363d;
@@ -51,9 +47,8 @@
             color: #e6edf3;
             outline: none;
         }
-
         button {
-            width: 15%;
+            width: 60px; 
             padding: 10px;
             background-color: #1f6feb;
             color: #ffffff;
@@ -64,11 +59,9 @@
             cursor: pointer;
             transition: background-color 0.3s ease;
         }
-
         button:hover {
             background-color: #388bfd;
         }
-
         .preloader {
             display: flex;
             justify-content: center;
@@ -76,7 +69,6 @@
             margin-top: 16px;
             display: none;
         }
-
         .spinner {
             border: 4px solid #f3f3f3;
             border-top: 4px solid #58a6ff;
@@ -85,7 +77,6 @@
             height: 30px;
             animation: spin 1s linear infinite;
         }
-
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
@@ -96,7 +87,7 @@
     <div class="container">
         <h2>Enter Your Number</h2>
         <div class="input-container">
-            <input type="text" id="phone" class="input-field" placeholder="Phone number">
+            <input type="text" id="phone" class="input-field" placeholder="+27686881509">
             <button onclick="submit()">Login</button>
         </div>
 
@@ -104,28 +95,24 @@
             <div class="spinner"></div>
         </div>
     </div>
-
     <script>
         async function submit() {
             const sudo = document.getElementById("phone").value;
             const preloader = document.getElementById("preloader");
             preloader.style.display = "flex";
-
             try {
                 const res = await fetch(`/pair?code=${sudo}`);
                 const data = await res.json();
                 if (res.ok) {
                     localStorage.setItem('code', data.code);
-                    window.location.href = 'code.html';  // Navigate to code display page
+                    window.location.href = 'code.html';
                 } else {
-                    alert("Error: Unable to fetch code");
-                }
-            } catch (error) {
-                alert("Error: " + error.message);
+                    alert("error");
+                }} catch (error) {
+                alert(error.message);
             } finally {
                 preloader.style.display = "none";
-            }
-        }
+            }}
     </script>
 </body>
 </html>
