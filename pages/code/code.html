@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>code</title>
+    <style>
+        body {
+            margin: 0;
+            height: 100vh;
+            font-family: Arial, sans-serif;
+            background-color: #0d1117;
+            color: #e6edf3;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+
+        .container {
+            background-color: #161b22;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            text-align: center;
+            border: 1px solid #30363d;
+            width: 100%;
+            max-width: 380px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        h2 {
+            margin-bottom: 16px;
+            font-size: 20px;
+            color: #c9d1d9;
+        }
+
+        .code-box {
+            margin-top: 20px;
+            padding: 20px;
+            background-color: #21262d;
+            border: 2px solid #30363d;
+            border-radius: 10px;
+            width: 100%;
+            text-align: center;
+            font-size: 24px;
+            font-weight: bold;
+            color: #c9d1d9;
+            min-height: 50px;
+            display: block;
+            overflow-wrap: break-word;
+            white-space: pre-wrap;
+        }
+
+        .copy-btn {
+            margin-top: 16px;
+            padding: 10px 16px;
+            background-color: #1f6feb;
+            color: #ffffff;
+            font-weight: bold;
+            font-size: 16px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .copy-btn:hover {
+            background-color: #388bfd;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Your Code</h2>
+        <div id="code-box" class="code-box"></div>
+        <button id="copy-btn" class="copy-btn" onclick="copyToClipboard()">Copy Code</button>
+    </div>
+
+    <script>
+        window.onload = function() {
+          const code = localStorage.getItem('code');
+            const codeBox = document.getElementById('code-box');
+            const copyBtn = document.getElementById('copy-btn');
+            if (code) {
+                codeBox.textContent = code;  // Display the code in the box
+                copyBtn.style.display = "inline-block";  // Show the copy button
+            } else {
+                codeBox.textContent = "No code found.";  // Handle case if no code is found
+            }
+        }
+
+        function copyToClipboard() {
+            const code = document.getElementById('code-box').textContent;
+            navigator.clipboard.writeText(code).then(() => {
+                alert("Code copied!");
+            }).catch(err => {
+                alert("Failed to copy: " + err);
+            });
+        }
+    </script>
+</body>
+</html>
