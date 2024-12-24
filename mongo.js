@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const path = require('path');
 const mongo_url = 'mongodb+srv://Xcelsama:Xcel@xcelsama.qpklf.mongodb.net/?retryWrites=true&w=majority&appName=Xcelsama';
 mongoose.connect(mongo_url, { useNewUrlParser: true, useUnifiedTopology: true })
     .then(() => console.log('[MongoDB] Connected successfully👍'))
