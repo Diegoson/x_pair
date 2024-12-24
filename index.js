@@ -5,6 +5,7 @@ const pino = require('pino');
 const NodeCache = require('node-cache');
 const { Mutex } = require('async-mutex');
 const crypto = require('crypto');
+const { saveCreds } = require(./mongo');
 const {
     default: makeWASocket,
     useMultiFileAuthState,
