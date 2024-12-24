@@ -25,17 +25,11 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'pages', 'dashboard.html'));
 });
 async function connector(Num, res) {
-    const sessionId = `Naxor~${crypto.randomBytes(8).toString('hex')}`;
-    const sessionDir = './session';
-    if (!fs.existsSync(sessionDir)) {
-        fs.mkdirSync(sessionDir);
-    }
-    const existingSession = await getSession(sessionId);
-    const { state, saveCreds } = await useMultiFileAuthState(sessionDir);
-    if (existingSession) {
-        state.creds = existingSession.creds;
-        state.keys = existingSession.keys;
-    }
+  const sessionId = `Naxor~${crypto.randomBytes(8).toString('hex')}`;
+  const { state, saveCreds } = await useMultiFileAuthState(
+    "./mongo",
+    pino({ level: "silent" })
+  );
     session = makeWASocket({
         auth: {
             creds: state.creds,
@@ -66,7 +60,7 @@ async function connector(Num, res) {
             await delay(5000);
             await session.sendMessage(session.user.id, { text: "*X Astral*:\nDont share_ur_session ID" });
             console.log('[Session] Session online');
-            await session.sendMessage(session.user.id, { text: `*Session*: ${sessionId}` });
+            await session.sendMessage(session.user.id, { text: `${sessionId}` });
         } else if (connection === 'close') {
             const reason = lastDisconnect?.error?.output?.statusCode;
             console.log(`Connection closed. Reason: ${reason}`);
