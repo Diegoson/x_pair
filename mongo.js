@@ -1,61 +1,28 @@
 const mongoose = require('mongoose');
-const AuthState = require('./models/Auth');
 const mongo_url = 'mongodb+srv://Xcelsama:Xcel@xcelsama.qpklf.mongodb.net/?retryWrites=true&w=majority&appName=Xcelsama';
 mongoose.connect(mongo_url, { useNewUrlParser: true, useUnifiedTopology: true })
-    .then(() => console.log('[MongoDB] Connected successfully'))
+    .then(() => console.log('[MongoDB] Connected successfully👍'))
     .catch((err) => {
         console.error('[MongoDB] error:', err);
         process.exit(1); 
     });
-function logAction(action, sessionId) {
-console.log(`[MongoDB] ${action} | Session ID: ${sessionId}`);}
-module.exports = {
-    saveSession: async (sessionId, state) => {
-        try {
-            const { creds, keys } = state;
-            const session = await AuthState.findOneAndUpdate(
-                { sessionId },
-                { sessionId, creds, keys, createdAt: new Date() },
-                { upsert: true, new: true });
-            logAction('Saved session', sessionId);
-            return session;
-        } catch (err) {
-            console.error(`[MongoDB] (${sessionId}):`, err);
-            throw err; 
-        }},
-    getSession: async (sessionId) => {
-        try {
-            const session = await AuthState.findOne({ sessionId });
-            if (session) {
-                logAction('session', sessionId);
-                return { creds: session.creds, keys: session.keys };
-            }
-            console.log(`[MongoDB] No session_ID: ${sessionId}`);
-            return null;
-        } catch (err) {
-            console.error(`[MongoDB] (${sessionId}):`, err);
-            throw err;
-        }},
-    deleteSession: async (sessionId) => {
-        try {
-            const result = await AuthState.deleteOne({ sessionId });
-            if (result.deletedCount > 0) {
-                logAction('Deleted session', sessionId);
-            } else {
-                console.log(`[MongoDB] No session_ID: ${sessionId}`);
-            }
-        } catch (err) {
-            console.error(`[MongoDB] (${sessionId}):`, err);
-            throw err;
-        }},
-    destroyAllSessions: async () => {
-        try {
-            const result = await AuthState.deleteMany({});
-            console.log(`[MongoDB] Destroyd (${result.deletedCount} removed)`);
-        } catch (err) {
-            console.error('[MongoDB] :', err);
-            throw err;
-        }},
-    isConnected: () => mongoose.connection.readyState === 1
-};
-  
+
+const cxl = "./session", db_bb = path.join(cxl, "creds.json");
+const SessionSchema = new mongoose.Schema({
+id: {type: String, required: true}, 
+data: {type: String, required: true}, 
+createdAt: {type: Date, default: Date.now}});
+const Creds = mongoose.model("Creds", SessionSchema);
+async function saveCreds(id, data) {
+if (!id.startsWith("Naxor~")) throw new Error('ID must start with "Naxor~"');
+   const db_cxl = id.replace("Naxor~", ""), creds = new Creds({id: db_cxl, data}); try {
+    await creds.save();
+    if (!fs.existsSync(cxl)) fs.mkdirSync(cxl, {recursive: true});
+    fs.writeFileSync(db_bb, JSON.stringify({id: db_cxl, data}, null, 2));
+    console.log("id_saved to MongoDB");
+  } catch (err) {
+    console.error(err.message);
+  }
+}
+
+module.exports = { saveCreds };
