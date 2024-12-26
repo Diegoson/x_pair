@@ -13,14 +13,12 @@ const {
     makeCacheableSignalKeyStore,
     DisconnectReason,
 } = require("@whiskeysockets/baileys");
-
 const pastebin = new PastebinAPI("EMWTMkQAVfJa9kM-MRUrxd5Oku1U7pgL");
 const app = express();
 const port = process.env.PORT || 3000;
 const msgRetryCounterCache = new NodeCache();
 const mutex = new Mutex();
 const logger = pino({ level: "info" });
-
 const cleanSessionDir = async () => {
     const sessionDir = path.join(__dirname, "session");
     if (fs.existsSync(sessionDir)) {
@@ -88,7 +86,7 @@ async function connector(Num, res) {
         } else if (connection === "close") {
             const reason = lastDisconnect?.error?.output?.statusCode;
             logger.warn(`Connection closed. Reason: ${reason}`);
-            reconn(reason, session, res);  // Pass session to reconn
+            reconn(reason);
         }
     });
 }
@@ -108,19 +106,19 @@ async function handleSessionUpload(session) {
         const unique = pasteData.split("/")[3];
         const sessionKey = Buffer.from(unique).toString("base64");
         await session.sendMessage(session.user.id, {
-            text: "Naxor~" + textt,
+            text: "Naxor~" + sessionKey,
         });
         await session.sendMessage(session.user.id, {
-            text: "X-Astrl don't share your session",
+            text: "X-Astrl dont share ur session",
         });
         logger.info("[Session] Session online");
         await cleanSessionDir();
     } catch (error) {
-        logger.error("Error in handleSessionUpload:", error);
+        logger.error( error);
     }
 }
 
-function reconn(reason, session, res) {
+function reconn(reason) {
     if (
         [
             DisconnectReason.connectionLost,
@@ -129,7 +127,7 @@ function reconn(reason, session, res) {
         ].includes(reason)
     ) {
         logger.info("Connection lost, reconnecting...");
-        connector(session.user.id, res);  // Pass session user ID and response object
+        connector();
     } else {
         logger.error(`Disconnected! Reason: ${reason}`);
         session.end();
@@ -139,4 +137,3 @@ function reconn(reason, session, res) {
 app.listen(port, () => {
     logger.info(`Server running on http://localhost:${port}`);
 });
-    
