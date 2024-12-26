@@ -16,7 +16,7 @@
     "express": "^4.21.1",
     "node-cache": "^5.1.2",
     "mongoose": "*",
-    "crypto": "*",
+    "pastebin-js": "*",
     "pino": "^9.4.0",
     "pm2": "^5.4.2"
   }
