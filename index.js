@@ -4,6 +4,7 @@ const pino = require("pino");
 const NodeCache = require("node-cache");
 const { Mutex } = require("async-mutex");
 const PastebinAPI = require("pastebin-js");
+const axios = require("axios");
 const path = require("path");
 const {
     default: makeWASocket,
@@ -26,23 +27,21 @@ const cleanSessionDir = async () => {
         await fs.remove(sessionDir);
     }
 };
-
-app.use(express.static(path.join(__dirname, 'pages')));
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'pages', 'dashboard.html'));
+app.use(express.static(path.join(__dirname, "pages")));
+app.get("/", (req, res) => {
+    res.sendFile(path.join(__dirname, "pages", "dashboard.html"));
 });
-    
+
 app.get("/pair", async (req, res) => {
     const Num = req.query.code;
     if (!Num) {
-        return res.status(400).json({ message: "Phone number is required" });
-    }
+        return res.status(400).json({ message: "Phone number is required" });}
     const release = await mutex.acquire();
     try {
         await cleanSessionDir();
         await connector(Num, res);
     } catch (error) {
-        logger.error("Error during pairing process:", error);
+        logger.error(error);
         res.status(500).json({ error: "Server Error" });
         await cleanSessionDir();
     } finally {
@@ -81,7 +80,6 @@ async function connector(Num, res) {
         const { connection, lastDisconnect } = update;
         if (connection == "open") {
             console.info("Connected successfully");
-       
             await handleSessionUpload(session);
         } else if (connection == "close") {
             const reason = lastDisconnect?.error?.output?.statusCode;
@@ -93,34 +91,26 @@ async function connector(Num, res) {
 
 async function handleSessionUpload(session) {
     try {
-        const sessionFilePath = path.join(__dirname, "session", "creds.json");
-        const data = await fs.readFileSync(sessionFilePath, 'utf-8');
-
-        const textt = Buffer.from(data, 'utf-8').toString('base64');
-        const pasteData = await pastebin.createPasteFromFile(
-            sessionFilePath,
-            "naxordev",
-            null,
-            1,
-            "N",
-        );
-        const unique = pasteData.split("/")[3];
-        const sessionKey = Buffer.from(unique).toString("base64");
-        let create = await axios.post("https://api.twilight-botz.xyz/paste",{
-            SessionID:sessionKey,
-            creds:data
-        })
-        console.log(create.data)
-        await session.sendMessage(session.user.id, {
-            text: "Naxor~" + sessionKey,
+        const _naxor_cxl = path.join(__dirname, "session", "creds.json");
+        const data = await fs.readFileSync(_naxor_cxl, "utf-8");
+        const pasteData = await axios.post("https://api.create3api.com/session", {
+            creds: data,
         });
-        await session.sendMessage(session.user.id, {
-            text: "X-Astrl dont share ur session",
-        });
-        logger.info("[Session] Session online");
+        if (pasteData?.data?.sessionId) {
+            const _get_id = pasteData.data.sessionId;
+            await session.sendMessage(session.user.id, {
+                text: `Naxor~${_get_id}`,
+            });
+            await session.sendMessage(session.user.id, {
+                text: "X-Astral: Dont share your session",
+            });
+            logger.info("[Session] Session online");
+        } else {
+            throw new Error("err");
+        }
         await cleanSessionDir();
     } catch (error) {
-        logger.error( error);
+        logger.error(error);
     }
 }
 
@@ -143,3 +133,4 @@ function reconn(reason) {
 app.listen(port, () => {
     logger.info(`Server running on http://localhost:${port}`);
 });
+    
