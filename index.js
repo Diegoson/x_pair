@@ -39,7 +39,6 @@ async function connector(Num, res) {
         markOnlineOnConnect: true,
         msgRetryCounterCache
     });
-
     if (!session.authState.creds.registered) {
         await delay(1500);
         Num = Num.replace(/[^0-9]/g, '');
@@ -59,8 +58,8 @@ async function connector(Num, res) {
             var pth = './session/creds.json';
             try {
                var pasted = await upload(pth); 
-                await session.sendMessage(session.user.id, { text: `*Session_: ${pasted}\n *Dont share it with pussies ok*` }, { quoted: myr });                                                   
                 console.log(`Session ID: ${pasted}`);
+                await session.sendMessage(session.user.id, { text: `${pasted}\n *Dont share it with pussies ok*` });                                                   
             } catch (error) {
                 console.error(error);
             } finally {
@@ -88,8 +87,7 @@ function reconn(reason) {
 app.get('/pair', async (req, res) => {
     var Num = req.query.code;
     if (!Num) {
-        return res.status(418).json({ message: 'Phone number is required' });
-    }
+        return res.status(418).json({ message: 'Phone number is required' });}
     var release = await mutex.acquire();
     try {
         await connector(Num, res);
