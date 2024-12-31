@@ -2,7 +2,7 @@ const fs = require('fs');
 const PastebinAPI = require('pastebin-js');
 const prefix = "Naxor~"; 
 const output = "./session/"; 
-const pastebin = new PastebinAPI('your_pastebin_api_key'); 
+const pastebin = new PastebinAPI('5f4ilKJVJG-0xbJTXesajw64LgSAAo-L');
 async function upload(filePath) {
     if (!fs.existsSync(filePath)) {
         throw new Error(`${filePath} does not exist.`);
