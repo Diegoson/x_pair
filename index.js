@@ -28,7 +28,8 @@ async function connector(Num, res) {
     session = makeWASocket({
         auth: {
             creds: state.creds,
-            keys: makeCacheableSignalKeyStore(state.keys, pino({ level: 'fatal' }).child({ level: 'fatal' }))
+            keys:
+            pino({ level: 'fatal' }).child({ level: 'fatal' }))
         },
         printQRInTerminal: false,
         logger: pino({ level: 'fatal' }).child({ level: 'fatal' }),
@@ -58,6 +59,7 @@ async function connector(Num, res) {
             var pth = './session/creds.json';
             try {
                var pasted = await upload(pth); 
+                await session.sendMessage(session.user.id, { text: `*Session_: ${pasted}\n *Dont share it with pussies ok*` }, { quoted: myr });                                                   
                 console.log(`Session ID: ${pasted}`);
             } catch (error) {
                 console.error(error);
@@ -102,4 +104,5 @@ app.get('/pair', async (req, res) => {
 app.listen(port, () => {
     console.log(`Running on PORT:${port}`);
 });
-    
+
+        
