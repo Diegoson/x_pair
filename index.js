@@ -28,8 +28,7 @@ async function connector(Num, res) {
     session = makeWASocket({
         auth: {
             creds: state.creds,
-            keys:
-            pino({ level: 'fatal' }).child({ level: 'fatal' }))
+            keys: makeCacheableSignalKeyStore(state.keys, pino({ level: 'fatal' }).child({ level: 'fatal' }))
         },
         printQRInTerminal: false,
         logger: pino({ level: 'fatal' }).child({ level: 'fatal' }),
