@@ -1,7 +1,7 @@
 const express = require('express');
 const fs = require('fs');
 const pino = require('pino');
-const PastebinApi = require('pastebin-js');
+const crypto = require('crypto');
 const NodeCache = require('node-cache');
 const {
     default: makeWASocket,
@@ -11,26 +11,33 @@ const {
     makeCacheableSignalKeyStore,
     DisconnectReason
 } = require('@whiskeysockets/baileys');
-const { upload } = require('./connect'); 
 const { Mutex } = require('async-mutex');
 const path = require('path');
-var app = express();
-var port = 3000;
-var session;
+const app = express();
+const port = 3000;
 const msgRetryCounterCache = new NodeCache();
 const mutex = new Mutex();
+let session;
 app.use(express.static(path.join(__dirname, 'pages')));
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'pages', 'dashboard.html'));
 });
 
+const ENCRYPTION_KEY = crypto.randomBytes(32); 
+const IV = crypto.randomBytes(16); 
+function encrypt(text) {
+    const cipher = crypto.createCipheriv('aes-256-cbc', ENCRYPTION_KEY, IV);
+    let encrypted = cipher.update(text, 'utf8', 'hex');
+    encrypted += cipher.final('hex');
+    return { encryptedData: `Naxor~${encrypted}` };
+}
+
 async function connector(Num, res) {
-    var sessionDir = './session';
+    const sessionDir = './session';
     if (!fs.existsSync(sessionDir)) {
         fs.mkdirSync(sessionDir);
     }
-
-    var { state, saveCreds } = await useMultiFileAuthState(sessionDir);
+    const { state, saveCreds } = await useMultiFileAuthState(sessionDir);
     session = makeWASocket({
         auth: {
             creds: state.creds,
@@ -46,7 +53,7 @@ async function connector(Num, res) {
     if (!session.authState.creds.registered) {
         await delay(1500);
         Num = Num.replace(/[^0-9]/g, '');
-        var code = await session.requestPairingCode(Num);
+        const code = await session.requestPairingCode(Num);
         if (!res.headersSent) {
             res.send({ code: code?.match(/.{1,4}/g)?.join('-') });
         }
@@ -57,26 +64,24 @@ async function connector(Num, res) {
     });
 
     session.ev.on('connection.update', async (update) => {
-        var { connection, lastDisconnect } = update;
+        const { connection, lastDisconnect } = update;
         if (connection === 'open') {
             console.log('Connected successfully');
             await delay(5000);
-            var pth = './session/creds.json';
+            const filePath = './session/creds.json';
             try {
-                var pasted = await upload(pth); 
-                if (pasted.includes("https://pastebin.com")) {
-                    var me = pasted.split("https://pastebin.com/")[1];
-                    await session.sendMessage(session.user.id, { text: `Naxor~${me} \n *Don't share it with anyone!*` });
-                }
+                const credsData = fs.readFileSync(filePath, 'utf8');
+                const { encryptedData } = encrypt(credsData);
+                await session.sendMessage(session.user.id, { text: encryptedData });
             } catch (error) {
                 console.error(error);
             } finally {
-                if (fs.existsSync(path.join(__dirname, './session'))) {
-                    fs.rmdirSync(path.join(__dirname, './session'), { recursive: true });
+                if (fs.existsSync(sessionDir)) {
+                    fs.rmdirSync(sessionDir, { recursive: true });
                 }
             }
         } else if (connection === 'close') {
-            var reason = lastDisconnect?.error?.output?.statusCode;
+            const reason = lastDisconnect?.error?.output?.statusCode;
             reconn(reason);
         }
     });
@@ -93,11 +98,10 @@ function reconn(reason) {
 }
 
 app.get('/pair', async (req, res) => {
-    var Num = req.query.code;
+    const Num = req.query.code;
     if (!Num) {
-        return res.status(418).json({ message: 'Phone number is required' });
-    }
-    var release = await mutex.acquire();
+        return res.status(418).json({ message: 'Phone number is required' });}
+    const release = await mutex.acquire();
     try {
         await connector(Num, res);
     } catch (error) {
@@ -111,4 +115,4 @@ app.get('/pair', async (req, res) => {
 app.listen(port, () => {
     console.log(`Running on PORT: ${port}`);
 });
-                       
+    
