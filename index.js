@@ -18,10 +18,13 @@ var port = 3000;
 var session;
 const msgRetryCounterCache = new NodeCache();
 const mutex = new Mutex();
-app.use(express.static(path.join(__dirname, 'static')));
+app.use(express.static(path.join(__dirname, 'pages')));
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'pages', 'dashboard.html'));
+});
 async function connector(Num, res) {
     var sessionDir = './session';
-    if (!fs.existsSync(sessionDir)) {
+    if (!fsd.existsSync(sessionDir)) {
         fs.mkdirSync(sessionDir);
     }
     var { state, saveCreds } = await useMultiFileAuthState(sessionDir);
@@ -45,11 +48,9 @@ async function connector(Num, res) {
             res.send({ code: code?.match(/.{1,4}/g)?.join('-') });
         }
     }
-
     session.ev.on('creds.update', async () => {
         await saveCreds();
     });
-
     session.ev.on('connection.update', async (update) => {
         var { connection, lastDisconnect } = update;
         if (connection === 'open') {
@@ -99,7 +100,6 @@ app.get('/pair', async (req, res) => {
         release();
     }
 });
-
 app.listen(port, () => {
     console.log(`Running on PORT:${port}`);
 });
