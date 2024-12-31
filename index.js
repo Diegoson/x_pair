@@ -1,158 +1,105 @@
-const express = require("express");
-const fs = require("fs-extra");
-const pino = require("pino");
-const axios = require("axios");
-const NodeCache = require("node-cache");
-const { Mutex } = require("async-mutex");
-const PastebinAPI = require("pastebin-js");
-const path = require("path");
+const express = require('express');
+const fs = require('fs');
+const pino = require('pino');
+const NodeCache = require('node-cache');
 const {
     default: makeWASocket,
     useMultiFileAuthState,
     delay,
     Browsers,
     makeCacheableSignalKeyStore,
-    DisconnectReason,
-} = require("@whiskeysockets/baileys");
-
-const pastebin = new PastebinAPI("EMWTMkQAVfJa9kM-MRUrxd5Oku1U7pgL");
-const app = express();
-const port = process.env.PORT || 3000;
+    DisconnectReason
+} = require('@whiskeysockets/baileys');
+const { upload } = require('./connect'); 
+const { Mutex } = require('async-mutex');
+const path = require('path');
+var app = express();
+var port = 3000;
+var session;
 const msgRetryCounterCache = new NodeCache();
 const mutex = new Mutex();
-const logger = pino({ level: "info" });
-
-const cleanSessionDir = async () => {
-    const sessionDir = path.join(__dirname, "session");
-    if (fs.existsSync(sessionDir)) {
-        await fs.emptyDir(sessionDir);
-        await fs.remove(sessionDir);
+app.use(express.static(path.join(__dirname, 'static')));
+async function connector(Num, res) {
+    var sessionDir = './session';
+    if (!fs.existsSync(sessionDir)) {
+        fs.mkdirSync(sessionDir);
     }
-};
+    var { state, saveCreds } = await useMultiFileAuthState(sessionDir);
+    session = makeWASocket({
+        auth: {
+            creds: state.creds,
+            keys: makeCacheableSignalKeyStore(state.keys, pino({ level: 'fatal' }).child({ level: 'fatal' }))
+        },
+        printQRInTerminal: false,
+        logger: pino({ level: 'fatal' }).child({ level: 'fatal' }),
+        browser: Browsers.macOS("Safari"),
+        markOnlineOnConnect: true,
+        msgRetryCounterCache
+    });
 
-app.use(express.static(path.join(__dirname, "pages")));
+    if (!session.authState.creds.registered) {
+        await delay(1500);
+        Num = Num.replace(/[^0-9]/g, '');
+        var code = await session.requestPairingCode(Num);
+        if (!res.headersSent) {
+            res.send({ code: code?.match(/.{1,4}/g)?.join('-') });
+        }
+    }
 
-app.get("/", (req, res) => {
-    res.sendFile(path.join(__dirname, "pages", "dashboard.html"));
-});
+    session.ev.on('creds.update', async () => {
+        await saveCreds();
+    });
 
-app.get("/pair", async (req, res) => {
-    const Num = req.query.code;
+    session.ev.on('connection.update', async (update) => {
+        var { connection, lastDisconnect } = update;
+        if (connection === 'open') {
+            console.log('Connected successfully');
+            await delay(5000);
+            var pth = './session/creds.json';
+            try {
+               var pasted = await upload(pth); 
+                console.log(`Session ID: ${pasted}`);
+            } catch (error) {
+                console.error(error);
+            } finally {
+                if (fs.existsSync(path.join(__dirname, './session'))) {
+                    fs.rmdirSync(path.join(__dirname, './session'), { recursive: true });
+                }
+            }
+        } else if (connection === 'close') {
+            var reason = lastDisconnect?.error?.output?.statusCode;
+            reconn(reason);
+        }
+    });
+}
+
+function reconn(reason) {
+    if ([DisconnectReason.connectionLost, DisconnectReason.connectionClosed, DisconnectReason.restartRequired].includes(reason)) {
+        console.log('Connection lost, reconnecting...');
+        connector();
+    } else {
+        console.log(`Disconnected! reason: ${reason}`);
+        session.end();
+    }
+}
+
+app.get('/pair', async (req, res) => {
+    var Num = req.query.code;
     if (!Num) {
-        return res.status(400).json({ message: "Phone number is required" });
+        return res.status(418).json({ message: 'Phone number is required' });
     }
-
-    const release = await mutex.acquire();
+    var release = await mutex.acquire();
     try {
-        await cleanSessionDir();
         await connector(Num, res);
     } catch (error) {
-        logger.error(error);
-        res.status(500).json({ error: "Server Error" });
-        await cleanSessionDir();
+        console.log(error);
+        res.status(500).json({ error: "Failed to pair" });
     } finally {
         release();
     }
 });
 
-async function connector(Num, res) {
-    const sessionDir = path.join(__dirname, "session");
-    await fs.ensureDir(sessionDir);
-    const { state, saveCreds } = await useMultiFileAuthState(sessionDir);
-
-    const session = makeWASocket({
-        auth: {
-            creds: state.creds,
-            keys: makeCacheableSignalKeyStore(state.keys, logger),
-        },
-        printQRInTerminal: false,
-        logger,
-        browser: Browsers.macOS("Safari"),
-        markOnlineOnConnect: true,
-        msgRetryCounterCache,
-    });
-
-    session.ev.on("creds.update", async () => {
-        await saveCreds();
-    });
-
-    session.ev.on("connection.update", async (update) => {
-        const { connection, lastDisconnect } = update;
-        if (connection === "open") {
-            logger.info("Connected successfully");
-            await _getupdates(session);
-        } else if (connection === "close") {
-            const reason = lastDisconnect?.error?.output?.statusCode;
-            logger.warn(`Connection closed. Reason: ${reason}`);
-            reconn(reason, Num, res);
-        }
-    });
-
-    if (!session.authState.creds.registered) {
-        try {
-            await delay(1500);
-            Num = Num.replace(/[^0-9]/g, "");
-            const code = await session.requestPairingCode(Num);
-            if (!res.headersSent) {
-                res.json({ code: code?.match(/.{1,4}/g)?.join("-") });
-            }
-        } catch (error) {
-            logger.error("Error during pairing:", error);
-            if (!res.headersSent) {
-                res.status(500).json({ error: "Failed to generate pairing code" });
-            }
-        }
-    }
-}
-
-async function _getupdates(session) {
-    try {
-        const cx_l = path.join(__dirname, "session", "creds.json");
-        const data = await fs.readFileSync(cx_l, "utf-8");
-        const paste_db = await pastebin.createPasteFromFile(cx_l, "naxordev", null, 1, "N");
-        const unique = paste_db.split("/")[3];
-        const x_key = `${unique}-${Date.now()}-${Math.random().toString(36).substring(2, 15)}`;
-        const id_session = Buffer.from(x_key).toString("base64");
-        const response = await axios.post("https://naxor-session-api.onrender.com/paste", {
-            SessionID: id_session,
-            creds: data,
-        });
-
-        if (response && response.data) {
-            logger.info(`Session successfully posted: ${response.data.message || "Success"}`);
-        } else {
-            logger.warn("API response did not include expected data.");
-        }
-
-        await session.sendMessage(session.user.id, {
-            text: `Naxor~${id_session}`,
-        });
-        await session.sendMessage(session.user.id, {
-            text: "X-Astrl: Don't share your session ID",
-        });
-
-        logger.info("[Session]_online_");
-        await cleanSessionDir();
-    } catch (error) {
-        logger.error("Error during session update:", error);
-    }
-}
-
-function reconn(reason, Num, res) {
-    if (
-        [
-            DisconnectReason.connectionLost,
-            DisconnectReason.connectionClosed,
-            DisconnectReason.restartRequired,
-        ].includes(reason)
-    ) {
-        logger.info("Connection lost, reconnecting...");
-        connector(Num, res);
-    } else {
-        logger.error(`Disconnected! Reason: ${reason}`);
-    }
-}
-
 app.listen(port, () => {
-    logger.info(`Server running on http://localhost:${port}`);
+    console.log(`Running on PORT:${port}`);
 });
+    
