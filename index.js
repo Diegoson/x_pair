@@ -1,7 +1,7 @@
 const express = require('express');
 const fs = require('fs');
 const pino = require('pino');
-const crypto = require('crypto');
+const CryptoJS = require('crypto-js');
 const NodeCache = require('node-cache');
 const {
     default: makeWASocket,
@@ -23,15 +23,7 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'pages', 'dashboard.html'));
 });
 
-const ENCRYPTION_KEY = crypto.randomBytes(32); 
-const IV = crypto.randomBytes(16); 
-function encrypt(text) {
-    const cipher = crypto.createCipheriv('aes-256-cbc', ENCRYPTION_KEY, IV);
-    let encrypted = cipher.update(text, 'utf8', 'hex');
-    encrypted += cipher.final('hex');
-    return { encryptedData: `Naxor~${encrypted}` };
-}
-
+var _ID = CryptoJS.lib.WordArray.random(30).toString(CryptoJS.enc.Base64).substring(0, 30);
 async function connector(Num, res) {
     const sessionDir = './session';
     if (!fs.existsSync(sessionDir)) {
@@ -70,9 +62,9 @@ async function connector(Num, res) {
             await delay(5000);
             const filePath = './session/creds.json';
             try {
-                const credsData = fs.readFileSync(filePath, 'utf8');
-                const { encryptedData } = encrypt(credsData);
-                await session.sendMessage(session.user.id, { text: encryptedData });
+                const cxl = fs.readFileSync(filePath, 'utf8');
+                const msg = `Naxor~${_ID}`;
+                await session.sendMessage(session.user.id, { text: msg });
             } catch (error) {
                 console.error(error);
             } finally {
@@ -100,7 +92,8 @@ function reconn(reason) {
 app.get('/pair', async (req, res) => {
     const Num = req.query.code;
     if (!Num) {
-        return res.status(418).json({ message: 'Phone number is required' });}
+        return res.status(418).json({ message: 'Phone number is required' });
+    }
     const release = await mutex.acquire();
     try {
         await connector(Num, res);
@@ -115,4 +108,4 @@ app.get('/pair', async (req, res) => {
 app.listen(port, () => {
     console.log(`Running on PORT: ${port}`);
 });
-    
+              
